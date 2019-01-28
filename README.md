@@ -8,11 +8,11 @@ This project is posted for educational use only. It involves electricity, high h
 I will not be held liable damages or injuries resulting from the use of this code or from copying this project.
 ```
 
-* Arduino maintains water level in the boiler. Probing water level is throttled to one second to slow down electrolysis – the continuity circuit uses digital IO pin as output and an analog pin as input to. Boiler doesn't refill if dispensing is in progress.
-* Three SSRs control the pump, boiler refill soleoind and E61 solenoid.
+* Arduino maintains water level in the boiler. Probing water level is throttled to one second to slow down electrolysis – the continuity circuit uses digital IO pin as output and an analog pin as input. Boiler doesn't refill if dispensing is in progress.
+* Three SSRs control the pump, boiler refill solenoid and E61 solenoid.
 * Pushbutton starts and stops dispensing by turning on the pump and E61 solenoid.
-* Boiler is controlled by a pressure stat and thermo switch on a separate AC circuit, it is assumed to be always on (see TODO).
-* Built for ECM Veneziano A1.
+* Boiler is controlled by a pressurestat and thermo switch on a separate AC circuit, it is assumed to be always on (see TODO).
+* Built for ECM Veneziano A1 (semi-auto HX machine with volumetric control).
 
 ## Resources
 
