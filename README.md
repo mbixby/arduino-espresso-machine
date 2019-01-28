@@ -27,5 +27,4 @@ https://github.com/AnthonyDipilato/EspressoMachine - similar project, uses a dif
 - add shift register to control all buttons and LEDs on the machine
 - get flowmeter working for volumetric control
 
-![Pic](https://i.imgur.com/rYCZEsT.jpg)
-
+<img src="https://i.imgur.com/rYCZEsTl.jpg" width="40%"/>
