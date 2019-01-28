@@ -27,4 +27,9 @@ https://github.com/AnthonyDipilato/EspressoMachine - similar project, uses a dif
 - add shift register to control all buttons and LEDs on the machine
 - get flowmeter working for volumetric control
 
+**Similar wiring diagram (ECM Giotto)**   
+<img src="https://www.home-barista.com/forums/userpix/18943_wiring_diagram_-_rocket-giotto-premium-plus-v2-sp-2014.jpg" width="60%"/>
+
+**ECM Veneziano**   
+
 <img src="https://i.imgur.com/rYCZEsTl.jpg" width="40%"/>
