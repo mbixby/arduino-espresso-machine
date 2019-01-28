@@ -14,10 +14,6 @@ I will not be held liable damages or injuries resulting from the use of this cod
 * Boiler is controlled by a pressurestat and thermo switch on a separate AC circuit, it is assumed to be always on (see TODO).
 * Built for ECM Veneziano A1 (semi-auto HX machine with volumetric control).
 
-## Resources
-
-https://github.com/AnthonyDipilato/EspressoMachine - similar project, uses a different water level sensing mechanism and different controls
-
 ## TODO
 
 - post hydraulic schematic and circuit diagram
@@ -26,6 +22,10 @@ https://github.com/AnthonyDipilato/EspressoMachine - similar project, uses a dif
 - monitor water tank level
 - add shift register to control all buttons and LEDs on the machine
 - get flowmeter working for volumetric control
+
+## Resources
+
+https://github.com/AnthonyDipilato/EspressoMachine - similar project, uses a different water level sensing mechanism and different controls
 
 **Similar wiring diagram (ECM Giotto)**   
 <img src="https://www.home-barista.com/forums/userpix/18943_wiring_diagram_-_rocket-giotto-premium-plus-v2-sp-2014.jpg" width="60%"/>
