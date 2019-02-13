@@ -17,8 +17,8 @@
 #define LED2 9
 #define LED3 6
 #define LED4 5
-#define BTN1 12
-#define BTN2 11
+#define BTN1 11
+#define BTN2 12
 #define BTN3 8
 #define BTN4 7
 // tank + boiler sensor pin
@@ -41,22 +41,24 @@
 #define FILLING_BOILER 1
 #define DISPENSING 2
 
-// TODO Remove
-#define PUMP_DELAY 1000
+#define MIN_BOILER_FILL_TIME 4000
 #define WATER_PROBE_INTERVAL 1000
 
 RBD::Button button1(BTN1);
 RBD::Button button2(BTN2);
 RBD::Button button3(BTN3);
 RBD::Button button4(BTN4);
+
+// On-off is reversed (LEDs are connected
+// to +5V pin and PWM output pin)
 RBD::Light light1(LED1);
 RBD::Light light2(LED2);
 RBD::Light light3(LED3);
 RBD::Light light4(LED4);
 
-int lastMachineState = IDLE;
-int lastPumpSwitch = 0;
+int lastMachineState = -1;
 int lastBoilerFillSenseTime = 0;
+int lastMachineStateChangeTime = 0;
 boolean doesUserWantDispense = false;
 boolean lastBoilerFillSenseValue = false;
 
@@ -78,15 +80,33 @@ boolean senseBoilerFill() {
   return lastBoilerFillSenseValue;
 }
 
+void setInitialMachineState() {
+  digitalWrite(REL_BOILER, REL_ON);
+
+  // Turn off LEDs
+  light1.on();
+  light2.on();
+  light3.on();
+  light4.on();
+}
+
 void setMachineState(int newState) {
   if (lastMachineState == newState){
     return;
   }
+
+  // Time elapsed since the last state change
+  int elapsed = millis() - lastMachineStateChangeTime;
+
   // Ensure at least PUMP_DELAY between switching pump on/off
-  if (lastPumpSwitch && millis() - lastPumpSwitch < PUMP_DELAY){
-    Serial.println("Throttling pump switch");
+  if (lastMachineState == FILLING_BOILER && newState == IDLE &&
+    elapsed < MIN_BOILER_FILL_TIME){
+    Serial.println("Throttling boiler fill");
     return;
   }
+
+  setInitialMachineState();
+
   if (newState == IDLE){
     Serial.println("Changing state IDLE");
     // Everything off
@@ -99,11 +119,12 @@ void setMachineState(int newState) {
     digitalWrite(REL_PUMP, REL_ON);
   } else if (newState == DISPENSING){
     Serial.println("Changing state DISPENSING");
+    light1.off();
     // E61 solenoid + pump
     digitalWrite(REL_SLN, REL_ON);
     digitalWrite(REL_PUMP, REL_ON);
   }
-  lastPumpSwitch = millis();
+  lastMachineStateChangeTime = millis();
   lastMachineState = newState;
 }
 
@@ -119,9 +140,8 @@ void setup() {
   pinMode(BOILER_PIN, OUTPUT);
   pinMode(CHASIS_PIN, INPUT);
   pinMode(FLW_PIN, INPUT);
-  
+
   setMachineState(IDLE);
-  digitalWrite(REL_BOILER, REL_ON);
 
   Serial.begin(9600);
 }
@@ -153,12 +173,13 @@ void loop() {
 }
 
 // TODO:
+// - min boiler fill time
 // - BTN4 manual op
 // - test current version
 // - leds on while dispensing
 // - tank level
 // - boiler switch
-// - min boiler fill time, better pump throttle
+// - better pump throttle
 // - LED timer while dispensing (flow + time), blink + fade? 
 // - BTN1-3 programmable
 // - BTN1+BTN4 cleaning mode 5x(15s + 20s pause)
