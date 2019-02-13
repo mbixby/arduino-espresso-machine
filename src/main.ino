@@ -143,7 +143,8 @@ void setMachineState(int newState, bool needsBoilerRefill) {
     // E61 solenoid + pump
     digitalWrite(REL_SLN, REL_ON);
     digitalWrite(REL_PUMP, REL_ON);
-    light1.off();
+    // LED stopwatch
+    light4.fade(100, 1900, 100, 1900);
   } else if (newState == NEEDS_TANK_REFILL){
     Serial.println("Changing state NEEDS_TANK_REFILL");
     // Everything off
@@ -209,7 +210,6 @@ void loop() {
 }
 
 // TODO:
-// - LED timer while dispensing (flow + time), blink + fade? 
-// - BTN1-3 programmable
+// - programmable BTN1-3 (flowmeter, eeprom)
 // - BTN1+BTN4 cleaning mode 5x(15s + 20s pause)
 // - RBD_Light - reverse LED on/off
