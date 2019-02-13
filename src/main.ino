@@ -13,23 +13,27 @@
 
 #define TANK_PIN 2 // +5V
 #define BOILER_PIN 3 // +5V
+// All blinking - error 
 #define LED1 10
 #define LED2 9
 #define LED3 6
 #define LED4 5
+// Press to start dispensing for a predefined volume. (BTN1-3)
+// Press and hold to program volume.
 #define BTN1 11
 #define BTN2 12
 #define BTN3 8
+// Manual operation. Press to start / stop dispensing.
 #define BTN4 7
-// tank + boiler sensor pin
+// Tank + boiler sensor pin
 #define CHASIS_PIN A0
-// flowmeter input
+// Flowmeter input
 #define FLW_PIN A1
-// inactive = boiler fill solenoid on, active = E61 solenoid on
+// Inactive = boiler fill solenoid on, active = E61 solenoid on
 #define REL_SLN A4
-// active = pump on
+// Active = pump on
 #define REL_PUMP A3
-// active = pump on
+// Active = pump on
 #define REL_BOILER A2
 
 // Relays are active on LOW
@@ -40,9 +44,18 @@
 #define IDLE 0
 #define FILLING_BOILER 1
 #define DISPENSING 2
+#define NEEDS_TANK_REFILL 3
+
+#define OK true
+#define NEEDS_FILL false
 
 #define MIN_BOILER_FILL_TIME 4000
 #define WATER_PROBE_INTERVAL 1000
+
+typedef struct {
+  boolean boiler;
+  boolean tank;
+} WaterLevelState;
 
 RBD::Button button1(BTN1);
 RBD::Button button2(BTN2);
@@ -57,48 +70,54 @@ RBD::Light light3(LED3);
 RBD::Light light4(LED4);
 
 int lastMachineState = -1;
-int lastBoilerFillSenseTime = 0;
+int lastWaterLevelSenseTime = 0;
 int lastMachineStateChangeTime = 0;
 boolean doesUserWantDispense = false;
-boolean lastBoilerFillSenseValue = false;
+boolean lastNeedsBoilerRefill = false;
+WaterLevelState lastWaterLevelState = { .boiler = OK, .tank = OK };
 
 // Water level in the boiler and the tank is sensed each 1s to prevent
 // corrosion of the metal probes.
 //
 // BOILER_PIN / TANK_PIN supplies input voltage to the sensor.
 // TODO Debounce (boiling water in the tank)
-boolean senseBoilerFill() {
-  int elapsed = millis() - lastBoilerFillSenseTime;
-  if (lastBoilerFillSenseTime && elapsed < WATER_PROBE_INTERVAL){
-    return lastBoilerFillSenseValue;
+WaterLevelState senseWaterLevel() {
+  int elapsed = millis() - lastWaterLevelSenseTime;
+  if (lastWaterLevelSenseTime && elapsed < WATER_PROBE_INTERVAL){
+    return lastWaterLevelState;
   }
-  lastBoilerFillSenseTime = millis();
+  lastWaterLevelSenseTime = millis();
   digitalWrite(BOILER_PIN, HIGH);
-  int boilerLevelInputValue = analogRead(CHASIS_PIN);
+  lastWaterLevelState.boiler = analogRead(CHASIS_PIN) < 100 ? NEEDS_FILL : OK;
   digitalWrite(BOILER_PIN, LOW);
-  lastBoilerFillSenseValue = boilerLevelInputValue < 100;
-  return lastBoilerFillSenseValue;
+  digitalWrite(TANK_PIN, HIGH);
+  lastWaterLevelState.tank = analogRead(CHASIS_PIN) < 100 ? NEEDS_FILL : OK;
+  digitalWrite(TANK_PIN, LOW);
+  return lastWaterLevelState;
 }
 
 void setInitialMachineState() {
-  digitalWrite(REL_BOILER, REL_ON);
-
   // Turn off LEDs
   light1.on();
   light2.on();
   light3.on();
   light4.on();
+  // TODO Reset relays here without causing re-trigger
 }
 
-void setMachineState(int newState) {
-  if (lastMachineState == newState){
+void setMachineState(int newState, bool needsBoilerRefill) {
+  boolean stateDidChange = lastMachineState != newState ||
+    lastNeedsBoilerRefill != needsBoilerRefill;
+  if (!stateDidChange){
     return;
   }
 
   // Time elapsed since the last state change
   int elapsed = millis() - lastMachineStateChangeTime;
 
-  // Ensure at least PUMP_DELAY between switching pump on/off
+  // Water level should not be at the tip of the probe since the boiling
+  // water could cause jitter. Minimum boiler fill time should avoid that.
+  // Empty tank will always stop boiler fill.
   if (lastMachineState == FILLING_BOILER && newState == IDLE &&
     elapsed < MIN_BOILER_FILL_TIME){
     Serial.println("Throttling boiler fill");
@@ -106,6 +125,8 @@ void setMachineState(int newState) {
   }
 
   setInitialMachineState();
+  
+  digitalWrite(REL_BOILER, needsBoilerRefill ? REL_OFF : REL_ON);
 
   if (newState == IDLE){
     Serial.println("Changing state IDLE");
@@ -119,13 +140,25 @@ void setMachineState(int newState) {
     digitalWrite(REL_PUMP, REL_ON);
   } else if (newState == DISPENSING){
     Serial.println("Changing state DISPENSING");
-    light1.off();
     // E61 solenoid + pump
     digitalWrite(REL_SLN, REL_ON);
     digitalWrite(REL_PUMP, REL_ON);
+    light1.off();
+  } else if (newState == NEEDS_TANK_REFILL){
+    Serial.println("Changing state NEEDS_TANK_REFILL");
+    // Everything off
+    digitalWrite(REL_SLN, REL_OFF);
+    digitalWrite(REL_PUMP, REL_OFF);
+    // Flash LEDs
+    light1.fade(300, 100, 1200, 300);
+    light2.fade(300, 100, 1200, 300);
+    light3.fade(300, 100, 1200, 300);
+    light4.fade(300, 100, 1200, 300);
   }
+
   lastMachineStateChangeTime = millis();
   lastMachineState = newState;
+  lastNeedsBoilerRefill = needsBoilerRefill;
 }
 
 void setup() {
@@ -141,7 +174,7 @@ void setup() {
   pinMode(CHASIS_PIN, INPUT);
   pinMode(FLW_PIN, INPUT);
 
-  setMachineState(IDLE);
+  setMachineState(IDLE, false);
 
   Serial.begin(9600);
 }
@@ -153,35 +186,30 @@ void loop() {
   light4.update();
 
   // Read inputs
-  boolean doesNeedBoilerFill = senseBoilerFill();
-  if (button1.onPressed()){
+  WaterLevelState waterLevelState = senseWaterLevel();
+  if (button4.onPressed()){
     Serial.println("Btn pressed");
     doesUserWantDispense = !doesUserWantDispense;
   }
 
   // Compute next state from inputs
   int newState = IDLE;
+
+  if (waterLevelState.tank == NEEDS_FILL){
+    newState = NEEDS_TANK_REFILL;
   // Never start filling boiler if already dispensing.
-  if (doesNeedBoilerFill && lastMachineState != DISPENSING){
+  } else if (waterLevelState.boiler == NEEDS_FILL && lastMachineState != DISPENSING){
     newState = FILLING_BOILER;
   } else if (doesUserWantDispense) {
     newState = DISPENSING;
   }
 
   // Persist state
-  setMachineState(newState);
+  setMachineState(newState, waterLevelState.boiler == NEEDS_FILL);
 }
 
 // TODO:
-// - min boiler fill time
-// - BTN4 manual op
-// - test current version
-// - leds on while dispensing
-// - tank level
-// - boiler switch
-// - better pump throttle
 // - LED timer while dispensing (flow + time), blink + fade? 
 // - BTN1-3 programmable
 // - BTN1+BTN4 cleaning mode 5x(15s + 20s pause)
-// - Dispensing should have a limit to prevent boiler from running dry.
-// - Never start dispensing if the boiler is dry to prevent coil damage
+// - RBD_Light - reverse LED on/off
