@@ -9,26 +9,27 @@ I will not be held liable damages or injuries resulting from the use of this cod
 ```
 
 * Arduino maintains water level in the boiler. Probing water level is throttled to one second to slow down electrolysis – the continuity circuit uses digital IO pin as output and an analog pin as input. Boiler doesn't refill if dispensing is in progress.
-* Three SSRs control the pump, boiler refill solenoid and E61 solenoid.
+* Three relays control the pump, boiler, boiler refill solenoid and E61 solenoid.
 * Pushbutton starts and stops dispensing by turning on the pump and E61 solenoid.
-* Boiler is controlled by a pressurestat and thermo switch on a separate AC circuit, it is assumed to be always on (see TODO).
+* Low tank water level is indicated by flashing LEDs.
+* Boiler is controlled by a pressurestat and thermo switch on a separate AC circuit. It is turned off when the boiler water level is low.
 * Built for ECM Veneziano A1 (semi-auto HX machine with volumetric control).
 
 ## TODO
 
-- post hydraulic schematic and circuit diagram
-- replace SSR with relays. This will allow to control both solenoids with one relay to act as a three-way valve
-- turn off boiler heat when boiler water level is too low
-- monitor water tank level
-- add shift register to control all buttons and LEDs on the machine
+- post hydraulic schematic
 - get flowmeter working for volumetric control
 
 ## Resources
 
 https://github.com/AnthonyDipilato/EspressoMachine - similar project, uses a different water level sensing mechanism and different controls
 
-**Similar wiring diagram (ECM Giotto)**   
-<img src="https://www.home-barista.com/forums/userpix/18943_wiring_diagram_-_rocket-giotto-premium-plus-v2-sp-2014.jpg" width="60%"/>
+**Wiring diagram from ECM Giotto**   
+<img src="https://www.home-barista.com/forums/userpix/18943_wiring_diagram_-_rocket-giotto-premium-plus-v2-sp-2014.jpg" width="40%"/>
+
+**Prototype board**   
+
+<img src="https://i.imgur.com/JBID1xi.png" width="40%"/>
 
 **ECM Veneziano**   
 
