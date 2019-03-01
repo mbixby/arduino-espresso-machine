@@ -30,11 +30,11 @@
 // Flowmeter input
 #define FLW_PIN A1
 // Inactive = boiler fill solenoid on, active = E61 solenoid on
-#define REL_SLN A4
+#define REL_SLN A3
+// Active = boiler on
+#define REL_BOILER A4
 // Active = pump on
-#define REL_PUMP A3
-// Active = pump on
-#define REL_BOILER A2
+#define REL_PUMP A2
 
 // Relays are active on LOW
 #define REL_OFF HIGH
@@ -87,12 +87,35 @@ WaterLevelState senseWaterLevel() {
     return lastWaterLevelState;
   }
   lastWaterLevelSenseTime = millis();
+
   digitalWrite(BOILER_PIN, HIGH);
-  lastWaterLevelState.boiler = analogRead(CHASIS_PIN) < 100 ? NEEDS_FILL : OK;
+  int boilerPinValue = analogRead(CHASIS_PIN);
   digitalWrite(BOILER_PIN, LOW);
+
   digitalWrite(TANK_PIN, HIGH);
-  lastWaterLevelState.tank = analogRead(CHASIS_PIN) < 100 ? NEEDS_FILL : OK;
+  int tankPinValue = analogRead(CHASIS_PIN);
   digitalWrite(TANK_PIN, LOW);
+
+  if ((boilerPinValue + tankPinValue) < 500) {
+    lastWaterLevelState.boiler = NEEDS_FILL;
+    lastWaterLevelState.tank = NEEDS_FILL;
+  } else if (boilerPinValue < 20) {
+    lastWaterLevelState.boiler = NEEDS_FILL;
+    lastWaterLevelState.tank = OK;
+  } else if (tankPinValue < 20) {
+    lastWaterLevelState.boiler = OK;
+    lastWaterLevelState.tank = NEEDS_FILL;
+  } else {
+    lastWaterLevelState.boiler = OK;
+    lastWaterLevelState.tank = OK;
+  }
+  
+  Serial.print(boilerPinValue, DEC);
+  Serial.println(" - boiler");
+  Serial.print(tankPinValue, DEC);
+  Serial.println(" - tank");
+  Serial.println("");
+
   return lastWaterLevelState;
 }
 
