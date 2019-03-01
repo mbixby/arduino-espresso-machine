@@ -228,6 +228,12 @@ void loop() {
     newState = DISPENSING;
   }
 
+  // If the tank/boiler level is too low user will have to press the button
+  // again. (Don't accidentally resume dispensing.)
+  if (newState != DISPENSING) {
+    doesUserWantDispense = false;
+  }
+
   // Persist state
   setMachineState(newState, waterLevelState.boiler == NEEDS_FILL);
 }
