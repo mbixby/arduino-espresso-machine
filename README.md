@@ -23,7 +23,9 @@ I will not be held liable damages or injuries resulting from the use of this cod
 
 ## TODO
 
-- get flowmeter working for volumetric control
+- Improve water level sensor. See [this thread on Arduino forums](https://forum.arduino.cc/index.php?topic=585723.0). The sensing circuit should be isolated from Arduino with optocouplers. It should be shielded from AC noise. It could also use AC to prevent electrolysis.
+- I ran into an intermittent issue where the pump and solenoid relays couldn't switch at the same time. This only happened when the boiler, pump and solenoids were connected to relays. In `raw.cpp` I added a small delay between switches which hotfixed the issue so I'll look into it later.
+- Get flowmeter working for volumetric control
 
 ## Resources
 
